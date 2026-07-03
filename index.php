@@ -8,79 +8,25 @@ if (!isset($_GET['group'])) {
     $group = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['group']);
 }
 
-// 2. Try multiple paths for database connection
-$db_paths = [
-    'config/db_connection.php',
-    '../config/db_connection.php',
-    '../../config/db_connection.php',
-    'db.php',
-    '../db.php'
-];
+// 2. Panggil db.php (Naik 2 tingkat ke atas untuk ke folder 'All')
+include '../../db.php'; 
 
-$db_found = false;
-foreach ($db_paths as $path) {
-    if (file_exists($path)) {
-        require_once $path;
-        $db_found = true;
-        break;
-    }
-}
-
-if (!$db_found) {
-    // Direct connection if no db file found
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "gw05_md";
-    
-    $conn = new mysqli($servername, $username, $password, $dbname);
-    
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-}
-
-// 3. Check connection
-if (!isset($conn) || $conn->connect_error) {
-    die("Database connection failed. Please check your configuration.");
-}
-
-// 4. Get members from document table
+// 3. Ambil data full_name dan matric_no sahaja menggunakan INNER JOIN
 $members = [];
-$sql = "SELECT DISTINCT author as full_name FROM document WHERE author IS NOT NULL AND author != '' ORDER BY author";
+$sql = "SELECT S.full_name, S.matric_no FROM stu S 
+        JOIN groupdb G ON S.group_no = G.groupID 
+        WHERE G.groupID = ?";
 
 if ($stmt = $conn->prepare($sql)) {
+    $stmt->bind_param("s", $group);
     $stmt->execute();
     $result = $stmt->get_result();
     
     while ($row = $result->fetch_assoc()) {
-        $matric_no = 'A' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
-        
-        $members[] = [
-            'full_name' => $row['full_name'],
-            'matric_no' => $matric_no
-        ];
+        $members[] = $row;
     }
     $stmt->close();
-} else {
-    // Try metadata table if document fails
-    $sql = "SELECT DISTINCT author as full_name FROM metadata WHERE author IS NOT NULL AND author != '' ORDER BY author";
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        while ($row = $result->fetch_assoc()) {
-            $matric_no = 'A' . str_pad(rand(10000, 99999), 5, '0', STR_PAD_LEFT);
-            
-            $members[] = [
-                'full_name' => $row['full_name'],
-                'matric_no' => $matric_no
-            ];
-        }
-        $stmt->close();
-    }
 }
-
 $conn->close(); 
 ?>
 <!DOCTYPE html>
@@ -108,52 +54,15 @@ $conn->close();
         .matrix-code { color: #00d2ff; font-weight: bold; font-family: monospace; font-size: 1.4rem; }
         .bil-col { font-size: 1.3rem; font-weight: bold; }
         
-        /* Button container for both buttons */
-        .button-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 40px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
+        /* Button Container & Buttons Styling */
+        .button-container { display: flex; gap: 20px; margin-top: 40px; }
+        .btn-back, .btn-project { display: inline-block; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: 0.3s; font-size: 1.1rem; text-align: center; }
         
-        .btn-back, .btn-project {
-            display: inline-block;
-            padding: 14px 30px;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: 0.3s;
-            font-size: 1.1rem;
-            border: none;
-            cursor: pointer;
-        }
+        .btn-project { background: #00d2ff; color: #0f0f0f; }
+        .btn-project:hover { background: #00b4db; }
         
-        .btn-back {
-            background: #555;
-            color: white;
-        }
-        .btn-back:hover {
-            background: #666;
-            transform: translateY(-2px);
-        }
-        
-        .btn-project {
-            background: #00d2ff;
-            color: #0f0f0f;
-        }
-        .btn-project:hover {
-            background: #00e5ff;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 210, 255, 0.3);
-        }
-        
-        .total-members {
-            text-align: right;
-            margin-top: 15px;
-            color: #888;
-            font-size: 1rem;
-        }
+        .btn-back { background: #333; color: white; border: 1px solid #444; }
+        .btn-back:hover { background: #444; }
     </style>
 </head>
 <body>
@@ -179,7 +88,6 @@ $conn->close();
                 <tr>
                     <td colspan="3" style="text-align: center; color: #ff4444; padding: 40px; font-size: 1.4rem;">
                         Tiada data ahli kumpulan ditemui untuk kod group "<?php echo htmlspecialchars($group); ?>".
-                        <br><small style="color: #666;">Sila pastikan terdapat data dalam table document atau metadata.</small>
                     </td>
                 </tr>
             <?php else: ?>
@@ -195,16 +103,9 @@ $conn->close();
     </table>
 </div>
 
-<?php if (!empty($members)): ?>
-<div class="total-members">
-    Jumlah Ahli: <?php echo count($members); ?> orang
-</div>
-<?php endif; ?>
-
-<!-- Button Container with both buttons -->
 <div class="button-container">
     <a href="main.php?group=<?php echo urlencode($group); ?>" class="btn-project">🚀 GO TO YOUR PROJECT</a>
-    <a href="../../dashboard.php?group=<?php echo urlencode($group); ?>" class="btn-back">⬅ BACK TO DASHBOARD</a>
+    <a href="../../main.php?group=<?php echo urlencode($group); ?>" class="btn-back">⬅ BACK TO DASHBOARD</a>
 </div>
 
 </body>
