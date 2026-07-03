@@ -3,9 +3,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $host = 'localhost';
-$username = 'root';
-$password = '';
-$database = 'gw05_md';  // ← Guna huruf kecil: md_gw05
+$username = 'GW05';
+$password = '123';
+$database = 'GW05';  // ← Guna huruf kecil: md_gw05
 
 $conn = new mysqli($host, $username, $password, $database);
 
