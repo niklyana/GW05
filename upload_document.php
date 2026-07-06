@@ -688,7 +688,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $message .= "🤖 Using: " . ($python_result ? '✅ Python Extraction' : 'PHP Extraction');
                     $message .= "<br><br>⏳ Redirecting to system...";
                     
-                    header("refresh:5;url=index.php");
+                    // ==========================================
+                    // REDIRECT TO main.php (FIXED)
+                    // ==========================================
+                    $redirect_url = "main.php";
+                    
+                    // Use JavaScript for redirect (more reliable)
+                    echo '<script>
+                        console.log("Upload successful, redirecting to ' . $redirect_url . '");
+                        setTimeout(function() {
+                            window.location.href = "' . $redirect_url . '";
+                        }, 5000);
+                    </script>';
+                    
+                    // PHP header as fallback
+                    header("refresh:5;url=" . $redirect_url);
+                    
                 } else {
                     $error = "Database error: " . $conn->error;
                 }
@@ -1256,7 +1271,7 @@ $categories = $conn->query("SELECT * FROM category ORDER BY category_name");
 
             <!-- Back Button -->
             <div style="margin-top: 12px; text-align: center;">
-                <a href="index.php" style="color: #667799; text-decoration: none; font-size: 13px;">
+                <a href="main.php" style="color: #667799; text-decoration: none; font-size: 13px;">
                     ⬅ BACK TO SYSTEM
                 </a>
             </div>
