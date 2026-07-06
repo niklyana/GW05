@@ -9,7 +9,7 @@ if (!isset($_GET['group'])) {
 }
 
 // 2. Panggil db.php (Naik 2 tingkat ke atas untuk ke folder 'All')
-include '../../db.php'; 
+include '../../db_connection.php'; 
 
 // 3. Ambil data full_name dan matric_no sahaja menggunakan INNER JOIN
 $members = [];
